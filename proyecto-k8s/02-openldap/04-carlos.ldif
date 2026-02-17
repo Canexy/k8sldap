@@ -1,0 +1,19 @@
+dn: uid=carlos,ou=usuarios,dc=inf
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+objectClass: sambaSamAccount
+cn: Carlos
+sn: Alumno
+uid: carlos
+uidNumber: 2001
+gidNumber: 3000
+homeDirectory: /home/carlos
+loginShell: /bin/bash
+userPassword: carlos
+# --- Atributos de Samba ---
+# El SID debe terminar en el uidNumber (2001) para mantener coherencia
+sambaSID: S-1-5-21-1234567890-1234567890-1234567890-2001
+sambaAcctFlags: [U          ]
+# Hash NT para la contraseña "carlos"
+sambaNTPassword: A2E0573F7335689110AE761592D50F56

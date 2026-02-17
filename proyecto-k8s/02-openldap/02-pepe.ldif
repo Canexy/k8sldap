@@ -1,0 +1,12 @@
+dn: uid=pepe,ou=usuarios,dc=inf
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Pepa
+sn: Pruebas
+uid: pepe
+uidNumber: 2000
+gidNumber: 2000
+homeDirectory: /home/pepe
+loginShell: /bin/bash
+userPassword: password123

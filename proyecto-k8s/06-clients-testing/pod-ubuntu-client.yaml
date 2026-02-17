@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ubuntu-client
+  namespace: proyecto
+spec:
+  containers:
+  - name: ubuntu
+    image: ubuntu:22.04
+    securityContext:
+      capabilities:
+        add: ["SYS_ADMIN", "DAC_READ_SEARCH"]
+    command: 
+    - "/bin/bash"
+    - "-c"
+    - |
+      apt-get update
+      # Añadimos smbclient y dnsutils (para nslookup)
+      DEBIAN_FRONTEND=noninteractive apt-get install -y ldap-utils libnss-ldap libpam-ldap openssh-server smbclient dnsutils iputils-ping || true
+      
+      # Aplicar configuraciones desde el ConfigMap
+
+      # SI EL ARCHIVO EXISTE, SE SOBRESCRIBE CON EL CONTENIDO DEL CONFIGMAP
+
+      [ -f /tmp/ldap-config/ldap.conf ] && cp /tmp/ldap-config/ldap.conf /etc/ldap.conf
+      [ -f /tmp/ldap-config/nsswitch.conf ] && cp /tmp/ldap-config/nsswitch.conf /etc/nsswitch.conf
+      [ -f /tmp/ldap-config/common-session ] && cp /tmp/ldap-config/common-session /etc/pam.d/common-session
+      [ -f /tmp/ldap-config/sshd_config ] && cp /tmp/ldap-config/sshd_config /etc/ssh/sshd_config
+      
+      mkdir -p /run/sshd
+      /usr/sbin/sshd
+      echo "Cliente configurado con LDAP y herramientas de Samba listo."
+      sleep infinity
+    volumeMounts:
+    - name: ldap-storage
+      mountPath: /tmp/ldap-config
+  volumes:
+  - name: ldap-storage
+    configMap:
+      name: ldap-client-config

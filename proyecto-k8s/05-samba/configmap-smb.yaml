@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: samba-config
+  namespace: proyecto
+data:
+  smb.conf: |
+    [global]
+       workgroup = INF
+       server string = Servidor Samba K8s
+       security = user
+       netbios name = SAMBA-SERVER
+       
+       # -- LOGS --
+       log level = 2
+       log file = /var/log/samba/log.%m
+       max log size = 50
+
+       # -- CONEXIÓN CON LDAP  --
+       passdb backend = ldapsam:ldap://openldap-svc.proyecto.svc.cluster.local
+       ldap suffix = dc=inf
+       ldap user suffix = ou=usuarios
+       ldap group suffix = ou=grupos
+       ldap admin dn = cn=admin,dc=inf
+       
+       # Desactivamos SSL para simplificar el laboratorio (En prod es obligatorio ON)
+       ldap ssl = off
+       ldap passwd sync = yes
+
+    [compartido]
+       comment = Carpeta Publica de Alumnos
+       path = /srv/samba/compartido
+       browseable = yes
+       read only = no
+       create mask = 0775
+       valid users = @alumnos, @tecnicos

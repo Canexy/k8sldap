@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: openldap
+  namespace: proyecto
+spec:
+  serviceName: "openldap-svc"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openldap
+  template:
+    metadata:
+      labels:
+        app: openldap
+    spec:
+      containers:
+        - name: openldap
+          image: osixia/openldap:1.5.0
+          env:
+            - name: LDAP_SEED_INTERNAL_SCHEMA_SAMBA
+              value: "true"
+            - name: LDAP_ORGANISATION
+              value: "IES Fernando Aguilar"
+            - name: LDAP_DOMAIN
+              value: "inf"
+            - name: LDAP_ADMIN_PASSWORD
+              value: "lasquepasancosas"
+            - name: LDAP_SEED_DIRECTORY # Esta variable le dice al contenedor donde tiene que buscar los ldifs para injectarlos en la base de datos
+              value: "/container/seed"
+            - name: LDAP_LOG_LEVEL
+              value: "256"
+          volumeMounts:
+            - name: ldap-data
+              mountPath: /var/lib/ldap
+            - name: ldap-seed-vol
+              mountPath: /container/seed
+      volumes:
+        - name: ldap-seed-vol
+          configMap:
+            name: ldap-seed-data
+  volumeClaimTemplates:
+    - metadata:
+        name: ldap-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

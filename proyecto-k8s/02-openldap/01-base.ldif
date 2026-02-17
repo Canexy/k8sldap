@@ -1,0 +1,8 @@
+# Eliminamos la parte de dc=inf porque ya la crea el contenedor al arrancar
+dn: ou=usuarios,dc=inf
+objectClass: organizationalUnit
+ou: usuarios
+
+dn: ou=grupos,dc=inf
+objectClass: organizationalUnit
+ou: grupos

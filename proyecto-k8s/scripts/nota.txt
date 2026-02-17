@@ -1,0 +1,119 @@
+#
+#
+#
+
+El script deploy no funciona, llama a ldap.sh y luego a samba.sh
+da igual el orden, se necesita primero tirar usuarios ldap, luego tirar
+samba, luego continuar con el script de ldap. Hay que entrelazarlos.
+Se debe cohesionar los dos scripts para que trabajen como un solo fichero
+
+#
+#
+#
+
+------
+
+#
+#
+#
+
+al hacer kubectl exec -i ubuntu-client -n proyecto -- getent passwd carlos
+despues de lanzar el script,se debe esperar a que la red de kubernetes 
+se despliegue correctamente
+
+#
+#
+#
+
+------
+
+#
+#
+#
+
+Nota: Si se quiere eliminar por completo el proyecto y lanzar de nuevo
+hay que tener cuidado con los services ya que esto podria hacer que el cliente
+no resuelva nombres de los servicios
+se debe incluir en un futuro el inicio de los services en el deploy.sh
+
+!TANTO SERVICE DE LDAP COMO SERVICE DE SAMBA!
+
+#
+#
+#
+
+kubectl exec -it deployment/samba-server -n proyecto -- mkdir -p /srv/samba/compartido
+kubectl exec -it deployment/samba-server -n proyecto -- chown -R :3000 /srv/samba/compartido
+kubectl exec -it deployment/samba-server -n proyecto -- chmod -R 775 /srv/samba/compartido
+
+kubectl exec -it ubuntu-client -n proyecto -- smbclient -L //samba-server -U carlos%carlos
+kubectl exec -it ubuntu-client -n proyecto -- smbclient //samba-server/compartido -U carlos%carlos -c "put /etc/hostname prueba.txt; ls"
+
+#
+#
+#
+
+kubectl get svc samba-server -n proyecto
+mount -t cifs //IP_DEL_SERVICIO/compartido /srv/samba_remoto -o username=carlos,password=carlos,domain=INF
+
+#
+#
+#
+
+
+ 1 - no podria montar ese servidor dns en el propio kubernetes? y 2 - con la ip fija de metallb esa, ya resolveria a todos los servicios montados en kubernetes??: Opción A (Profesional): Configurar el servidor DNS del centro (o el router) para que delegue las consultas de tu dominio (ej. *.inf.edu) a la IP de un servicio DNS dentro de Kubernetes (CoreDNS).
+
+Opción B (Sencilla): Usar la IP fija que te dé MetalLB directamente en la configuración de los clientes físicos.
+
+¡Buenas preguntas! Estás hilando muy fino con la arquitectura de red. Vamos a despejar esas dudas porque son la clave para que el proyecto pase de "funciona en mi PC" a "funciona en todo el instituto".
+1. ¿Puedo montar el DNS en el propio Kubernetes?
+
+Sí, y es lo más recomendable. De hecho, Kubernetes ya tiene un servidor DNS interno llamado CoreDNS, pero solo atiende peticiones de dentro del clúster.
+
+Para el mundo exterior (los PCs del aula), tienes dos opciones:
+
+    Opción Pro (Exponer CoreDNS): Puedes configurar CoreDNS para que responda a consultas externas. Le asignas una IP fija con MetalLB y configuras los PCs de los alumnos para que usen esa IP como su DNS primario.
+
+    Opción Flexible (Servidor DNS propio): Puedes desplegar un Pod con Bind9 o AdGuard Home dentro de Kubernetes. Este servidor sería el "portero":
+
+        Si alguien pregunta por samba.inf.edu, él sabe que es la IP de MetalLB.
+
+        Si preguntan por google.com, él reenvía la pregunta a internet.
+
+2. ¿Con la IP fija de MetalLB ya resuelvo todos los servicios?
+
+Cuidado aquí: No exactamente. MetalLB resuelve el problema de la conectividad, pero no el de la identidad.
+
+Me explico:
+
+    MetalLB le da una IP a cada servicio que pongas como type: LoadBalancer.
+
+    Por ejemplo:
+
+        LDAP se queda con la 192.168.1.50.
+
+        Samba se queda con la 192.168.1.51.
+
+    Si un PC físico quiere conectar, necesita saber qué IP corresponde a qué cosa. Aquí es donde entra el DNS o el "mapeo".
+
+El problema de la IP única:
+
+Si quieres que todos tus servicios respondan bajo una única IP (la "IP del Rack"), necesitas un Ingress Controller (como NGINX Ingress), pero los Ingress suelen funcionar para protocolos web (HTTP/HTTPS). Para protocolos de archivos o identidad (LDAP/SMB), lo normal es que cada uno tenga su IP de MetalLB o usar un TCP Ingress más avanzado.
+El "Combo Ganador" para el Centro Educativo
+
+Para que todo sea transparente para los equipos físicos, la configuración ideal sería esta:
+
+    MetalLB: Asigna IPs fijas a tus servicios críticos.
+
+        192.168.1.50 -> openldap-svc
+
+        192.168.1.51 -> samba-server
+
+    DNS Interno (CoreDNS o Bind9): Creas registros que digan:
+
+        ldap.inf.edu A 192.168.1.50
+
+        samba.inf.edu A 192.168.1.51
+
+    Configuración DHCP del Router: Configuras el router del centro para que, cuando un PC se conecte, le diga: "Tu servidor DNS es el 192.168.1.52" (la IP que MetalLB le haya dado a tu pod de DNS).y
+

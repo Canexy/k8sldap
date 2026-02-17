@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: proyecto
+  labels: 
+    env: production
+    course: ASIR
+    

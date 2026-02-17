@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - statefulset.yaml
+  - service.yaml
+  - phpldapadmin.yaml
+  - ingress.yaml
+
+# Esto evita que se cree un ConfigMap con nombre aleatorio (ej: ldap-seed-data-f4h7)
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+- name: ldap-seed-data
+  files:
+    - 01-base.ldif=01-base.ldif
+    - 02-pepe.ldif=02-pepe.ldif
+    - 03-grupos.ldif=03-grupos.ldif
+    - 04-carlos.ldif=04-carlos.ldif
+    - 05-alumnos.ldif=05-alumnos.ldif

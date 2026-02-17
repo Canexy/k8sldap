@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phpldapadmin
+  namespace: proyecto
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phpldapadmin
+  template:
+    metadata:
+      labels:
+        app: phpldapadmin
+    spec:
+      containers:
+        - name: phpldapadmin
+          image: osixia/phpldapadmin:0.9.0
+          ports:
+            - containerPort: 80
+          env:
+            - name: PHPLDAPADMIN_LDAP_HOSTS
+              value: "openldap-svc"
+            - name: PHPLDAPADMIN_HTTPS
+              value: "false"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phpldapadmin-svc
+  namespace: proyecto
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080
+  selector:
+    app: phpldapadmin

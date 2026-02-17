@@ -1,0 +1,5 @@
+dn: cn=tecnicos,ou=grupos,dc=inf
+objectClass: posixGroup
+cn: tecnico
+gidNumber: 2000
+memberUid: pepe

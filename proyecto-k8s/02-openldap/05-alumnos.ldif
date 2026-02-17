@@ -1,0 +1,5 @@
+dn: cn=alumnos,ou=grupos,dc=inf
+objectClass: posixGroup
+cn: alumnos
+gidNumber: 3000
+memberUid: carlos

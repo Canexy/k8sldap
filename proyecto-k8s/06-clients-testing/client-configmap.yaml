@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ldap-client-config
+  namespace: proyecto
+data:
+  ldap.conf: |
+    base dc=inf
+    uri ldap://openldap-svc.proyecto.svc.cluster.local
+    ldap_version 3
+    binddn cn=admin,dc=inf
+    bindpw lasquepasancosas
+    pam_password ad
+
+  nsswitch.conf: |
+    passwd:         files ldap
+    group:          files ldap
+    shadow:         files ldap
+    hosts:          files dns
+    networks:       files
+
+  common-session: |
+    session [default=1]               type=block
+    session requisite                 pam_deny.so
+    session required                  pam_permit.so
+    session required                  pam_unix.so
+    session optional                  pam_ldap.so
+    session required                  pam_mkhomedir.so skel=/etc/skel umask=0022
+
+  sshd_config: |
+    PasswordAuthentication yes
+    UsePAM yes
+    AllowGroups tecnicos
