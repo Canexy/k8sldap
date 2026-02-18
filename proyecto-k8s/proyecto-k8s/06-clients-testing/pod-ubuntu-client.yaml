@@ -10,31 +10,51 @@ spec:
     securityContext:
       capabilities:
         add: ["SYS_ADMIN", "DAC_READ_SEARCH"]
-    command: 
+    command:
     - "/bin/bash"
     - "-c"
     - |
       apt-get update
-      # Añadimos smbclient y dnsutils (para nslookup)
-      DEBIAN_FRONTEND=noninteractive apt-get install -y ldap-utils libnss-ldap libpam-ldap openssh-server smbclient dnsutils iputils-ping || true
-      
-      # Aplicar configuraciones desde el ConfigMap
 
-      # SI EL ARCHIVO EXISTE, SE SOBRESCRIBE CON EL CONTENIDO DEL CONFIGMAP
+      DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        ldap-utils \
+        libnss-ldap \
+        libpam-ldap \
+        openssh-server \
+        smbclient \
+        dnsutils \
+        iputils-ping \
+        autofs \
+        nfs-common
 
+      # Aplicar configuraciones LDAP
       [ -f /tmp/ldap-config/ldap.conf ] && cp /tmp/ldap-config/ldap.conf /etc/ldap.conf
       [ -f /tmp/ldap-config/nsswitch.conf ] && cp /tmp/ldap-config/nsswitch.conf /etc/nsswitch.conf
       [ -f /tmp/ldap-config/common-session ] && cp /tmp/ldap-config/common-session /etc/pam.d/common-session
       [ -f /tmp/ldap-config/sshd_config ] && cp /tmp/ldap-config/sshd_config /etc/ssh/sshd_config
-      
+
+      # Aplicar configuraciones autofs
+      [ -f /tmp/autofs/auto.master ] && cp /tmp/autofs/auto.master /etc/auto.master
+      [ -f /tmp/autofs/auto.home ] && cp /tmp/autofs/auto.home /etc/auto.home
+
       mkdir -p /run/sshd
       /usr/sbin/sshd
-      echo "Cliente configurado con LDAP y herramientas de Samba listo."
+
+      service autofs start
+
+      echo "Cliente configurado con LDAP, Samba, NFS y autofs listo."
       sleep infinity
+
     volumeMounts:
     - name: ldap-storage
       mountPath: /tmp/ldap-config
+    - name: autofs-config
+      mountPath: /tmp/autofs
+
   volumes:
   - name: ldap-storage
     configMap:
       name: ldap-client-config
+  - name: autofs-config
+    configMap:
+      name: autofs-config
