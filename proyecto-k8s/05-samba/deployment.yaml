@@ -21,8 +21,10 @@ spec:
           env:
             - name: TZ
               value: "Europe/Madrid"
-            - name: SAMBA_LDAP_PASSWORD
-              value: "lasquepasancosas"
+            # Samba necesita saber la contraseña del admin de LDAP para leer la base de datos
+            # IMPORTANTE: Esta variable la usa el script de arranque para hacer 'smbpasswd -w'
+            - name: SAMBA_LDAP_PASSWORD 
+              value: "lasquepasancosas" 
           ports:
             - containerPort: 445
               name: cifs
@@ -34,11 +36,9 @@ spec:
               subPath: smb.conf
             - name: data-volume
               mountPath: /srv/samba/compartido
-              subPath: compartido
       volumes:
         - name: config-volume
           configMap:
             name: samba-config
         - name: data-volume
-          persistentVolumeClaim:
-            claimName: nfs-data
+          emptyDir: {} # En el futuro, esto debería ser un PVC (NFS)
